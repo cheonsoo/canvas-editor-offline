@@ -15,12 +15,13 @@ import FormatColorFillIcon from '@mui/icons-material/FormatColorFill';
 import FormatItalicIcon from '@mui/icons-material/FormatItalic';
 import TextFieldsIcon from '@mui/icons-material/TextFields';
 import CreateIcon from '@mui/icons-material/Create';
+import FlipToFrontIcon from '@mui/icons-material/FlipToFront';
+import FlipToBackIcon from '@mui/icons-material/FlipToBack';
 
 import TextStyleDropdown from './textStyleDropbox';
 import TextStyleSelectbox from './textStyleSelectbox';
 import TextSizeSelectbox from './textSizeSelectbox';
 import FileInput from '../common/fileInput';
-// import ObjectLayers from './objectLayers/sample/reactDnd';
 import ObjectLayers from './objectLayers';
 
 const SEditorContainer = styled.div`
@@ -230,6 +231,21 @@ const Editor = () => {
   let ctx = null;
 
   useEffect(() => {
+    document.body.addEventListener('keyup', function(evt) {
+      if (evt.keyCode === 27 && canvasF) {
+        canvasF.discardActiveObject();
+        canvasF.renderAll();
+        setSelectedObject(null);
+      }
+
+      if (evt.keyCode === 8 && canvasF) {
+        canvasF.remove(canvasF.getActiveObject());
+        setSelectedObject(null);
+      }
+    });
+  }, [canvasF]);
+
+  useEffect(() => {
     if (!canvasFabric) {
       canvasFabric = new fabric.Canvas(canvasNode.current, {
         width: document.body.clientWidth - 40,
@@ -237,7 +253,6 @@ const Editor = () => {
       });
       ctx = canvasFabric.getContext('2d');
       canvasFabric.on('selection:cleared', () => {
-        // console.log('cleard: ', selectedObject);
         setSelectedObject(null);
       });
 
@@ -253,20 +268,19 @@ const Editor = () => {
   }, [canvasFabric]);
 
   useEffect(() => {
-    // console.log('selectedObject: ', selectedObject);
-  }, [selectedObject]);
-
-  // useEffect(() => {
-  //   const _layers = objects.map(o => o.toDataURL());
-  //   setLayers(_layers);
-  // }, [objects]);
-
-  useEffect(() => {
     if (selectedObject) {
       selectedObject.set({ ...textOptions, fill: color });
       canvasF.renderAll();
     }
   }, [textOptions]);
+
+  function addObject(obj) {
+    obj.on('selected', () => {
+      setSelectedObject(obj);
+    });
+    obj.id = new Date().getTime();
+    canvasF.add(obj);
+  }
 
   function handleShowTextInput() {
     textInput.current.focus();
@@ -276,51 +290,27 @@ const Editor = () => {
   function addText() {
     const txt = textInput.current.value;
     const textObject = new fabric.IText(txt, { ...textOptions, fill: color });
-    textObject.on('selected', () => {
-      setSelectedObject(textObject);
-    });
-    textObject.id = new Date().getTime();
-    canvasF.add(textObject);
+    addObject(textObject);
   }
 
   function setImage(evt) {
     const imgNode = evt.currentTarget;
+    const w = videoNode.current.videoWidth * 0.25;
+    const h = videoNode.current.videoHeight * 0.25;
     const img = new fabric.Image(imgNode, {
-      left: 50,
-      top: 50,
-      width: 200,
-      height: 100
+      left: 0,
+      top: 0,
+      width: w,
+      height: h
     });
-    img.id = new Date().getTime();
-    canvasF.add(img);
+    img.scaleToWidth(canvasF.width);
+    addObject(img);
   }
 
   function test() {
-    const circle = new fabric.Circle({
-      radius: 20, fill: 'green', left: 100, top: 100
-    });
-    circle.on('selected', () => {
-      setSelectedObject(circle);
-    });
-    const triangle = new fabric.Triangle({
-      width: 20, height: 30, fill: 'blue', left: 50, top: 50
-    });
-    triangle.on('selected', () => {
-      setSelectedObject(triangle);
-    });
-    const text = new fabric.Text('fabric 2.0', {
-      underline: true,
-      overline: true
-    });
-    text.on('selected', () => {
-      setSelectedObject(text);
-    });
-
-    canvasF.add(circle);
-    canvasF.add(triangle);
-    canvasF.add(text);
-
-    console.log(canvasF.getObjects());
+    addObject(new fabric.Circle({ radius: 20, fill: 'green', left: 100, top: 100 }));
+    addObject(new fabric.Triangle({ width: 20, height: 30, fill: 'blue', left: 50, top: 50 }));
+    addObject(new fabric.Text('Lotte-E-Commerce', { fontWeight: '900' }));
   }
 
   function shoot() {
@@ -346,33 +336,6 @@ const Editor = () => {
     if (selectedObject)
       selectedObject.set('fill', val.hex);
     canvasF.renderAll();
-  }
-
-  function handleChangeTextStyle(selected) {
-    setTextStyle(selected);
-
-    if (selectedObject) {
-      if (selected === 'h3') {
-        selectedObject.fontSize = 60;
-        selectedObject.fontWeight = 900;
-      } else if (selected === 'h2') {
-        selectedObject.fontSize = 30;
-        selectedObject.fontWeight = 500;
-      } else if (selected === 'h1') {
-        selectedObject.fontSize = 20;
-        selectedObject.fontWeight = 300;
-      } else if (selected === 'bold') {
-        selectedObject.set('fontWeight', selected);
-      } else if (selected === 'lineThrough') {
-        selectedObject.set({ linethrough: true });
-      } else if (selected === 'backgroundColor') {
-        selectedObject.set({ backgroundColor: color });
-      } else if (selected === 'italic') {
-        selectedObject.set({ fontStyle: 'italic' });
-      }
-
-      canvasF.renderAll();
-    }
   }
 
   function download() {
@@ -420,22 +383,18 @@ const Editor = () => {
     }
   }
 
-  const handleDrag = (sorted) => {
-    // console.log('handleDrag: ', sorted);
+  function handleDrag(sorted) {}
 
-    // setObjects(sorted);
-    // sorted.forEach((o, idx) => {
-    //   o.moveTo(idx);
-    // });
-    // canvasF.renderAll();
-    // canvasF.getObjects();
-    // canvasFabric.getObjects();
-    // console.log(canvasF);
-    // sorted.forEach((o, idx) => {
-    //   const obj = canvasF.getObjects().find(o2 => o2.id === o.id);
-    //   console.log(obj);
-    //   if (obj) obj.moveTo(10 - idx);
-    // });
+  function handleObjectPosition({ action = '' }) {
+    if (!selectedObject) return;
+    if (action === 'forward') // all the way up
+      selectedObject.bringToFront();
+    else if (action === 'back') // all the way down
+      selectedObject.sendToBack();
+    else if (action === 'forward') // 1 level up
+      selectedObject.bringForward();
+    else if (action === 'backward') // 1 level down
+      selectedObject.sendBackwards();
   }
 
   return (<SEditorContainer>
@@ -486,6 +445,8 @@ const Editor = () => {
             <li><SControlButton onClick={removeSelectedObject}><ClearIcon /></SControlButton></li>
             <li><FileInput handler={upload}><PanoramaIcon /></FileInput></li>
             <li><SControlButton onClick={download}><DownloadIcon /></SControlButton></li>
+            <li><SControlButton onClick={() => handleObjectPosition({ action: 'front' })}><FlipToFrontIcon /></SControlButton></li>
+            <li><SControlButton onClick={() => handleObjectPosition({ action: 'back' })}><FlipToBackIcon /></SControlButton></li>
             <li><SControlButton onClick={test}><QuestionMarkIcon /></SControlButton></li>
           </ul>
         </div>
@@ -505,7 +466,7 @@ const Editor = () => {
       </SObjectLayersContainer>
     </div>
 
-    <div className='object-layers' style={{ display: 'block' }}>
+    <div className='object-layers' style={{ display: 'none' }}>
       <div><h3>Layers (드래그하여 오브젝트 노출순위 조정, 작업중)</h3></div>
       <ObjectLayers data={objects} handler={handleDrag} />
     </div>
