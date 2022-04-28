@@ -20,9 +20,9 @@ import FlipToBackIcon from '@mui/icons-material/FlipToBack';
 
 import TextStyleDropdown from './textStyleDropbox';
 import TextStyleSelectbox from './textStyleSelectbox';
+import TemplateSelectbox from './templateSelectbox';
 import TextSizeSelectbox from './textSizeSelectbox';
 import FileInput from '../common/fileInput';
-import ObjectLayers from './objectLayers';
 
 const SEditorContainer = styled.div`
   width: 100%;
@@ -55,7 +55,10 @@ const SEditorContainer = styled.div`
     .controller {
       width: 100%;
       min-height: 35px;
-      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: right;
+      margin: 10px 0 0 0;
 
       > div {
         // border: 1px solid gray;
@@ -189,7 +192,6 @@ const Editor = () => {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [textStyle, setTextStyle] = useState(30);
   const [showTextInput, setShowTextInput] = useState(false);
-  // const [layers, setLayers] = useState([]);
   const [textOptions, setTextOptions] = useState({
     linethrough: false,
     fontStyle: 'normal',
@@ -210,7 +212,6 @@ const Editor = () => {
   useEffect(() => {
     document.body.addEventListener('keyup', function(evt) {
       if (evt.keyCode === 27) {
-        console.log(canvas.current.getObjects());
         canvas.current.discardActiveObject();
         canvas.current.renderAll();
       }
@@ -227,12 +228,6 @@ const Editor = () => {
         width: document.body.clientWidth - 40,
         height: 300
       });
-
-      // canvas.current.on('after:render', () => {
-      //   const _layers = canvas.current.getObjects().map(o => o.toDataURL());
-      //   const _objects = canvas.current.getObjects();
-      //   setLayers(_layers);
-      // });
     }
   }, [canvas.current]);
 
@@ -246,6 +241,7 @@ const Editor = () => {
   function addObject(obj) {
     obj.id = new Date().getTime();
     canvas.current.add(obj);
+    console.log(canvas.current.getObjects());
   }
 
   function handleShowTextInput() {
@@ -294,6 +290,18 @@ const Editor = () => {
     const dataUrl = _canvas.toDataURL();
 
     setSnapshots(snapshots.concat(dataUrl));
+
+    const imgNode = new Image();
+    imgNode.src = dataUrl;
+    const imgObject = new fabric.Image(imgNode, {
+      left: 0,
+      top: 0,
+      width: w,
+      height: h
+    });
+    imgObject.scaleToWidth(canvas.current.width);
+    addObject(imgObject);
+    imgObject.sendToBack();
   }
 
   function handleColorPicker(val) {
@@ -335,10 +343,6 @@ const Editor = () => {
     canvas.current.remove(canvas.current.getActiveObject());
   }
 
-  function handleContainerEvent(evt) {
-    console.log('handleConatinerEvent', evt);
-  }
-
   function handleKeyUpTextInput(evt) {
     if (evt.keyCode === 13) {
       addText();
@@ -361,20 +365,59 @@ const Editor = () => {
     }
   }
 
-  return (<SEditorContainer>
-    <div className='videoContainer' onKeyUp={handleContainerEvent}>
+  function setTemplate(selected) {
+    function clearCanvas() {
+      canvas.current.getObjects().forEach(o => {
+        if (o.get('type') !== 'image') {
+          canvas.current.remove(o);
+        }
+      });
+    }
+
+    clearCanvas();
+
+    if (selected === 'template1') {
+      const textObj = new fabric.IText('TEMPLATE #1', { fontWeight: '900', fill: 'yellow', top: 100, left: 100 });
+      addObject(textObj);
+      addObject(new fabric.Circle({ radius: 20, fill: 'green', top: 100, left: 50 }));
+      addObject(new fabric.Circle({ radius: 20, fill: 'green', top: 100, left: textObj.width + 120 }));
+    } else if (selected === 'template2') {
+      const textObj = new fabric.IText('TEMPLATE #2', { fontWeight: '900', fill: 'red', top: 100, left: 100 });
+      addObject(textObj);
+      addObject(new fabric.Triangle({ width: 20, height: 30, fill: 'blue', top: 100, left: 50 }));
+      addObject(new fabric.Triangle({ width: 20, height: 30, fill: 'blue', top: 100, left: textObj.width + 120 }));
+    } else if (selected === 'template3') {
+      const textObj = new fabric.IText('TEMPLATE #3', { fontWeight: '900', fill: 'green', top: 100, left: 100 });
+      addObject(textObj);
+      addObject(new fabric.Circle({ radius: 20, fill: 'yellow', top: 100, left: 50 }));
+      addObject(new fabric.Triangle({ width: 20, height: 30, fill: 'blue', top: 100, left: textObj.width + 120 }));
+    } else if (selected === 'template4') {
+      addObject(new fabric.Circle({ radius: 20, fill: 'green', left: 100, top: 100 }));
+      addObject(new fabric.Triangle({ width: 20, height: 30, fill: 'blue', left: 50, top: 50 }));
+      addObject(new fabric.IText('TEMPLATE #4', { fontWeight: '900', fill: 'red' }));
+    } else if (selected === 'template5') {
+      addObject(new fabric.Circle({ radius: 20, fill: 'green', left: 100, top: 100 }));
+      addObject(new fabric.Triangle({ width: 20, height: 30, fill: 'blue', left: 50, top: 50 }));
+      addObject(new fabric.IText('TEMPLATE #5', { fontWeight: '900', fill: 'red' }));
+    }
+  }
+
+  return (<SEditorContainer id='editor-container'>
+    <div className='videoContainer'>
       <div>
         <video ref={videoNode} className='videoPlayer' id='videoPlayer' width='100%' controls crossOrigin='anonymous' src='https://s3.ap-northeast-2.amazonaws.com/test-pddetail-admin.lotteon.com/static/images/ForBiggerFun.mp4' />
         <SCaptureBtn onClick={shoot}>O</SCaptureBtn>
       </div>
 
-      <div><h3>CAPTURES (클릭하여 편집기에 추가)</h3></div>
-      <div id='output'>
-        <ul id='output-list'>
-          {snapshots.map((img, idx) => (
-            <li key={idx}><img src={img} onClick={(evt) => setImage(evt)} /></li>
-          ))}
-        </ul>
+      <div style={{ display: 'none' }}>
+        <div><h3>CAPTURES (클릭하여 편집기에 추가)</h3></div>
+        <div id='output'>
+          <ul id='output-list'>
+            {snapshots.map((img, idx) => (
+              <li key={idx}><img src={img} onClick={(evt) => setImage(evt)} /></li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
 
@@ -382,6 +425,13 @@ const Editor = () => {
       <div className='controller'>
         <div>
           <ul>
+            <li><SControlButton onClick={() => {
+              canvas.current.discardActiveObject();
+              canvas.current.renderAll();
+            }}>UNSELECT</SControlButton></li>
+            <li><TemplateSelectbox handler={setTemplate} /></li>
+          </ul>
+          <ul style={{ display: 'none' }}>
             <li><TextSizeSelectbox handler={(selected) => setTextOptions({ ...textOptions, fontSize: selected })} /></li>
             <li>
               <SAddTextControlButton show={showTextInput}>
@@ -416,11 +466,6 @@ const Editor = () => {
         </div>
       </div>
       <canvas id='canvas-editor' ref={canvasNode} />
-    </div>
-
-    <div className='object-layers' style={{ display: 'block' }}>
-      <div><h3>Layers (드래그하여 오브젝트 노출순위 조정, 작업중)</h3></div>
-      <ObjectLayers data={canvas.current ? canvas.current.getObjects() : []} />
     </div>
   </SEditorContainer>);
 }
