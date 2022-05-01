@@ -1,7 +1,7 @@
 env: dev
 app:
   name: canvas-editor-offline
-  root: /Users/cheonsoo.park/Workspace/chance/image-text-canvas-editor
+  root: /Users/cheonsoo.park/Workspace/chance/canvas-editor-offline
 s3:
   bucket:
     static: s3://stg-static.lotteon.com/m/product

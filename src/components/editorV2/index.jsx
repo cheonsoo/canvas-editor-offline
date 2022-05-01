@@ -216,17 +216,20 @@ const Editor = () => {
         canvas.current.renderAll();
       }
 
-      if (evt.keyCode === 8) {
-        canvas.current.remove(canvas.current.getActiveObject());
-      }
+      // if (evt.keyCode === 8) {
+      //   canvas.current.remove(canvas.current.getActiveObject());
+      // }
     });
+
+    // window.addEventListener('message', function(evt) {
+    //   console.log('### child: ', evt.data);
+    // }, false);
   }, []);
 
   useEffect(() => {
     if (!canvas.current) {
       canvas.current = new fabric.Canvas(canvasNode.current, {
-        width: document.body.clientWidth - 40,
-        height: 300
+        width: document.body.clientWidth
       });
     }
   }, [canvas.current]);
@@ -241,7 +244,6 @@ const Editor = () => {
   function addObject(obj) {
     obj.id = new Date().getTime();
     canvas.current.add(obj);
-    console.log(canvas.current.getObjects());
   }
 
   function handleShowTextInput() {
@@ -291,6 +293,8 @@ const Editor = () => {
 
     setSnapshots(snapshots.concat(dataUrl));
 
+    clearCanvas('image');
+
     const imgNode = new Image();
     imgNode.src = dataUrl;
     const imgObject = new fabric.Image(imgNode, {
@@ -302,6 +306,14 @@ const Editor = () => {
     imgObject.scaleToWidth(canvas.current.width);
     addObject(imgObject);
     imgObject.sendToBack();
+  }
+
+  function clearCanvas(type = '') {
+    canvas.current.getObjects().forEach(o => {
+      if (o.get('type') === type) {
+        canvas.current.remove(o);
+      }
+    });
   }
 
   function handleColorPicker(val) {
@@ -366,15 +378,11 @@ const Editor = () => {
   }
 
   function setTemplate(selected) {
-    function clearCanvas() {
-      canvas.current.getObjects().forEach(o => {
-        if (o.get('type') !== 'image') {
-          canvas.current.remove(o);
-        }
-      });
-    }
-
-    clearCanvas();
+    canvas.current.getObjects().forEach(o => {
+      if (o.get('type') !== 'image') {
+        canvas.current.remove(o);
+      }
+    });
 
     if (selected === 'template1') {
       const textObj = new fabric.IText('TEMPLATE #1', { fontWeight: '900', fill: 'yellow', top: 100, left: 100 });
@@ -402,10 +410,30 @@ const Editor = () => {
     }
   }
 
+  function sendToParent(evt) {
+    window.parent.postMessage({
+      imgDataUrl: canvas.current.toDataURL()
+    }, '*');
+  }
+
+  function onLoadedData() {
+    console.log("onLoadedData");
+
+    const videoWidth = document.querySelector('#videoPlayer').videoWidth;
+    const videoHeight = document.querySelector('#videoPlayer').videoHeight;
+    const clientWidth = document.body.clientWidth;
+    const canvasHeight = (videoHeight * clientWidth) / videoWidth;
+    console.log('videoWidth: ', videoWidth);
+    console.log('videoHeight: ', videoHeight);
+    console.log('clientWidth: ', clientWidth);
+    console.log('canvasHeight: ', canvasHeight);
+    canvas.current.setHeight(canvasHeight);
+  }
+
   return (<SEditorContainer id='editor-container'>
     <div className='videoContainer'>
       <div>
-        <video ref={videoNode} className='videoPlayer' id='videoPlayer' width='100%' controls crossOrigin='anonymous' src='https://s3.ap-northeast-2.amazonaws.com/test-pddetail-admin.lotteon.com/static/images/ForBiggerFun.mp4' />
+        <video ref={videoNode} className='videoPlayer' id='videoPlayer' width='100%' controls crossOrigin='anonymous' src='https://s3.ap-northeast-2.amazonaws.com/test-pddetail-admin.lotteon.com/static/images/ForBiggerFun.mp4' onLoadedData={onLoadedData} />
         <SCaptureBtn onClick={shoot}>O</SCaptureBtn>
       </div>
 
@@ -425,10 +453,13 @@ const Editor = () => {
       <div className='controller'>
         <div>
           <ul>
+            <li><SControlButton onClick={sendToParent}>SEND TO PARENT</SControlButton></li>
+            <li><FileInput handler={upload}><PanoramaIcon /></FileInput></li>
             <li><SControlButton onClick={() => {
               canvas.current.discardActiveObject();
               canvas.current.renderAll();
             }}>UNSELECT</SControlButton></li>
+            <li><SControlButton onClick={removeSelectedObject}><ClearIcon /></SControlButton></li>
             <li><TemplateSelectbox handler={setTemplate} /></li>
           </ul>
           <ul style={{ display: 'none' }}>

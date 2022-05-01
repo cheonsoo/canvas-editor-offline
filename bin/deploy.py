@@ -18,7 +18,7 @@ print(f"s3_admin: {s3_admin}")
 print(f"[STARTED] Starting deployment at {now}")
 
 print("====================================================================================================")
-print("Building {app_name}")
+print(f"Building {app_name}")
 print("====================================================================================================")
 os.system("PUBLIC_URL='.' yarn build")
 
