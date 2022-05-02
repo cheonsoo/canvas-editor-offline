@@ -25,8 +25,9 @@ const FileInput = (props) => {
   }
 
   function handleChange(evt) {
-    const toBeUploaded = document.querySelector('#file-upload').files[0];
-    console.log(toBeUploaded);
+    // const toBeUploaded = document.querySelector('#file-upload').files[0];
+    const toBeUploaded = fileInput.current.files[0];
+    console.log('toBeUploaded', toBeUploaded);
     props.handler && props.handler(toBeUploaded);
   }
 

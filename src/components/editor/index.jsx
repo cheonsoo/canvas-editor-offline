@@ -23,6 +23,7 @@ import TextStyleSelectbox from './textStyleSelectbox';
 import TemplateSelectbox from './templateSelectbox';
 import TextSizeSelectbox from './textSizeSelectbox';
 import FileInput from '../common/fileInput';
+import VideoCaptureModal from './videoCaptureModal';
 
 const SEditorContainer = styled.div`
   width: 100%;
@@ -201,6 +202,7 @@ const Editor = () => {
     stroke: false,
     fill: '#004dcf'
   });
+  const [showVideoCaptureModal, setShowVideoCaptureModal] = useState(false);
 
   const canvas = useRef();
 
@@ -215,21 +217,14 @@ const Editor = () => {
         canvas.current.discardActiveObject();
         canvas.current.renderAll();
       }
-
-      // if (evt.keyCode === 8) {
-      //   canvas.current.remove(canvas.current.getActiveObject());
-      // }
     });
-
-    // window.addEventListener('message', function(evt) {
-    //   console.log('### child: ', evt.data);
-    // }, false);
   }, []);
 
   useEffect(() => {
     if (!canvas.current) {
       canvas.current = new fabric.Canvas(canvasNode.current, {
-        width: document.body.clientWidth
+        width: document.body.clientWidth,
+        height: (9 * document.body.clientWidth) / 16 // Canvas Ratio: 16:9
       });
     }
   }, [canvas.current]);
@@ -302,6 +297,23 @@ const Editor = () => {
       top: 0,
       width: w,
       height: h
+    });
+    imgObject.scaleToWidth(canvas.current.width);
+    addObject(imgObject);
+    imgObject.sendToBack();
+  }
+
+  function setImageToCanvas(img) {
+    clearCanvas('image');
+
+    const w = canvas.current.width;
+    const h = canvas.current.height;
+
+    const imgNode = new Image();
+    imgNode.src = img;
+    const imgObject = new fabric.Image(imgNode, {
+      left: 0,
+      top: 0
     });
     imgObject.scaleToWidth(canvas.current.width);
     addObject(imgObject);
@@ -417,8 +429,6 @@ const Editor = () => {
   }
 
   function onLoadedData() {
-    console.log("onLoadedData");
-
     const videoWidth = document.querySelector('#videoPlayer').videoWidth;
     const videoHeight = document.querySelector('#videoPlayer').videoHeight;
     const clientWidth = document.body.clientWidth;
@@ -430,45 +440,35 @@ const Editor = () => {
     canvas.current.setHeight(canvasHeight);
   }
 
-  function openVideoCaptureModal() {}
+  function openVideoCaptureModal() {
+    setShowVideoCaptureModal(!showVideoCaptureModal);
+  }
+
+  function handleShow() {
+    setShowVideoCaptureModal(!showVideoCaptureModal);
+  }
 
   return (<SEditorContainer id='editor-container'>
-    <div className='videoContainer'>
-      <div>
-        <video ref={videoNode} className='videoPlayer' id='videoPlayer' width='100%' controls crossOrigin='anonymous' src='https://s3.ap-northeast-2.amazonaws.com/test-pddetail-admin.lotteon.com/static/images/ForBiggerFun.mp4' onLoadedData={onLoadedData} />
-        <SCaptureBtn onClick={shoot}>O</SCaptureBtn>
-      </div>
-
-      <div style={{ display: 'none' }}>
-        <div><h3>CAPTURES (클릭하여 편집기에 추가)</h3></div>
-        <div id='output'>
-          <ul id='output-list'>
-            {snapshots.map((img, idx) => (
-              <li key={idx}><img src={img} onClick={(evt) => setImage(evt)} /></li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </div>
-
     <div className='canvasContainer'>
       <div className='controller'>
         <div>
           <ul>
             <li><SControlButton onClick={sendToParent}>SEND TO PARENT</SControlButton></li>
-            <li><FileInput handler={upload}><PanoramaIcon /></FileInput></li>
             <li><SControlButton onClick={() => {
               canvas.current.discardActiveObject();
               canvas.current.renderAll();
             }}>UNSELECT</SControlButton></li>
             <li><SControlButton onClick={removeSelectedObject}><ClearIcon /></SControlButton></li>
             <li><TemplateSelectbox handler={setTemplate} /></li>
-            <li><SControlButton onClick={openVideoCaptureModal}>Video Capture</SControlButton></li>
+            <li><SControlButton onClick={openVideoCaptureModal}>VIDEO CAPTURE</SControlButton></li>
+            <li><SControlButton onClick={download}>DOWNLOAD</SControlButton></li>
           </ul>
         </div>
       </div>
       <canvas id='canvas-editor' ref={canvasNode} />
     </div>
+
+    <VideoCaptureModal show={showVideoCaptureModal} handleShow={handleShow} handler={setImageToCanvas} />
   </SEditorContainer>);
 }
 
