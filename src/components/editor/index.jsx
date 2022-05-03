@@ -20,9 +20,10 @@ import FlipToBackIcon from '@mui/icons-material/FlipToBack';
 
 import TextStyleDropdown from './textStyleDropbox';
 import TextStyleSelectbox from './textStyleSelectbox';
+import TemplateSelectbox from './templateSelectbox';
 import TextSizeSelectbox from './textSizeSelectbox';
 import FileInput from '../common/fileInput';
-import ObjectLayers from './objectLayers';
+import VideoCaptureModal from './videoCaptureModal';
 
 const SEditorContainer = styled.div`
   width: 100%;
@@ -55,12 +56,15 @@ const SEditorContainer = styled.div`
     .controller {
       width: 100%;
       min-height: 35px;
-      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: right;
+      margin: 10px 0 0 0;
 
       > div {
         // border: 1px solid gray;
         height: 100%;
-        margin: 0 20px;
+        margin: 0 5px;
 
         ul {
           list-style: none;
@@ -189,7 +193,6 @@ const Editor = () => {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [textStyle, setTextStyle] = useState(30);
   const [showTextInput, setShowTextInput] = useState(false);
-  // const [layers, setLayers] = useState([]);
   const [textOptions, setTextOptions] = useState({
     linethrough: false,
     fontStyle: 'normal',
@@ -199,6 +202,7 @@ const Editor = () => {
     stroke: false,
     fill: '#004dcf'
   });
+  const [showVideoCaptureModal, setShowVideoCaptureModal] = useState(false);
 
   const canvas = useRef();
 
@@ -210,13 +214,8 @@ const Editor = () => {
   useEffect(() => {
     document.body.addEventListener('keyup', function(evt) {
       if (evt.keyCode === 27) {
-        console.log(canvas.current.getObjects());
         canvas.current.discardActiveObject();
         canvas.current.renderAll();
-      }
-
-      if (evt.keyCode === 8) {
-        canvas.current.remove(canvas.current.getActiveObject());
       }
     });
   }, []);
@@ -224,15 +223,9 @@ const Editor = () => {
   useEffect(() => {
     if (!canvas.current) {
       canvas.current = new fabric.Canvas(canvasNode.current, {
-        width: document.body.clientWidth - 40,
-        height: 300
+        width: document.body.clientWidth,
+        height: (9 * document.body.clientWidth) / 16 // Canvas Ratio: 16:9
       });
-
-      // canvas.current.on('after:render', () => {
-      //   const _layers = canvas.current.getObjects().map(o => o.toDataURL());
-      //   const _objects = canvas.current.getObjects();
-      //   setLayers(_layers);
-      // });
     }
   }, [canvas.current]);
 
@@ -294,6 +287,45 @@ const Editor = () => {
     const dataUrl = _canvas.toDataURL();
 
     setSnapshots(snapshots.concat(dataUrl));
+
+    clearCanvas('image');
+
+    const imgNode = new Image();
+    imgNode.src = dataUrl;
+    const imgObject = new fabric.Image(imgNode, {
+      left: 0,
+      top: 0,
+      width: w,
+      height: h
+    });
+    imgObject.scaleToWidth(canvas.current.width);
+    addObject(imgObject);
+    imgObject.sendToBack();
+  }
+
+  function setImageToCanvas(img) {
+    clearCanvas('image');
+
+    const w = canvas.current.width;
+    const h = canvas.current.height;
+
+    const imgNode = new Image();
+    imgNode.src = img;
+    const imgObject = new fabric.Image(imgNode, {
+      left: 0,
+      top: 0
+    });
+    imgObject.scaleToWidth(canvas.current.width);
+    addObject(imgObject);
+    imgObject.sendToBack();
+  }
+
+  function clearCanvas(type = '') {
+    canvas.current.getObjects().forEach(o => {
+      if (o.get('type') === type) {
+        canvas.current.remove(o);
+      }
+    });
   }
 
   function handleColorPicker(val) {
@@ -335,10 +367,6 @@ const Editor = () => {
     canvas.current.remove(canvas.current.getActiveObject());
   }
 
-  function handleContainerEvent(evt) {
-    console.log('handleConatinerEvent', evt);
-  }
-
   function handleKeyUpTextInput(evt) {
     if (evt.keyCode === 13) {
       addText();
@@ -361,41 +389,71 @@ const Editor = () => {
     }
   }
 
-  return (<SEditorContainer>
-    <div className='videoContainer' onKeyUp={handleContainerEvent}>
-      <div>
-        <video ref={videoNode} className='videoPlayer' id='videoPlayer' width='100%' controls crossOrigin='anonymous' src='https://s3.ap-northeast-2.amazonaws.com/test-pddetail-admin.lotteon.com/static/images/ForBiggerFun.mp4' />
-        <SCaptureBtn onClick={shoot}>O</SCaptureBtn>
-      </div>
+  function setTemplate(selected) {
+    canvas.current.getObjects().forEach(o => {
+      if (o.get('type') !== 'image') {
+        canvas.current.remove(o);
+      }
+    });
 
-      <div><h3>CAPTURES (클릭하여 편집기에 추가)</h3></div>
-      <div id='output'>
-        <ul id='output-list'>
-          {snapshots.map((img, idx) => (
-            <li key={idx}><img src={img} onClick={(evt) => setImage(evt)} /></li>
-          ))}
-        </ul>
-      </div>
-    </div>
+    if (selected === 'template1') {
+      const textObj = new fabric.IText('TEMPLATE #1', { fontWeight: '900', fill: 'yellow', top: 100, left: 100 });
+      addObject(textObj);
+      addObject(new fabric.Circle({ radius: 20, fill: 'green', top: 100, left: 50 }));
+      addObject(new fabric.Circle({ radius: 20, fill: 'green', top: 100, left: textObj.width + 120 }));
+    } else if (selected === 'template2') {
+      const textObj = new fabric.IText('TEMPLATE #2', { fontWeight: '900', fill: 'red', top: 100, left: 100 });
+      addObject(textObj);
+      addObject(new fabric.Triangle({ width: 20, height: 30, fill: 'blue', top: 100, left: 50 }));
+      addObject(new fabric.Triangle({ width: 20, height: 30, fill: 'blue', top: 100, left: textObj.width + 120 }));
+    } else if (selected === 'template3') {
+      const textObj = new fabric.IText('TEMPLATE #3', { fontWeight: '900', fill: 'green', top: 100, left: 100 });
+      addObject(textObj);
+      addObject(new fabric.Circle({ radius: 20, fill: 'yellow', top: 100, left: 50 }));
+      addObject(new fabric.Triangle({ width: 20, height: 30, fill: 'blue', top: 100, left: textObj.width + 120 }));
+    } else if (selected === 'template4') {
+      addObject(new fabric.Circle({ radius: 20, fill: 'green', left: 100, top: 100 }));
+      addObject(new fabric.Triangle({ width: 20, height: 30, fill: 'blue', left: 50, top: 50 }));
+      addObject(new fabric.IText('TEMPLATE #4', { fontWeight: '900', fill: 'red' }));
+    } else if (selected === 'template5') {
+      addObject(new fabric.Circle({ radius: 20, fill: 'green', left: 100, top: 100 }));
+      addObject(new fabric.Triangle({ width: 20, height: 30, fill: 'blue', left: 50, top: 50 }));
+      addObject(new fabric.IText('TEMPLATE #5', { fontWeight: '900', fill: 'red' }));
+    }
+  }
 
+  function sendToParent(evt) {
+    window.parent.postMessage({
+      imgDataUrl: canvas.current.toDataURL()
+    }, '*');
+  }
+
+  function onLoadedData() {
+    const videoWidth = document.querySelector('#videoPlayer').videoWidth;
+    const videoHeight = document.querySelector('#videoPlayer').videoHeight;
+    const clientWidth = document.body.clientWidth;
+    const canvasHeight = (videoHeight * clientWidth) / videoWidth;
+    // console.log('videoWidth: ', videoWidth);
+    // console.log('videoHeight: ', videoHeight);
+    // console.log('clientWidth: ', clientWidth);
+    // console.log('canvasHeight: ', canvasHeight);
+    canvas.current.setHeight(canvasHeight);
+  }
+
+  function openVideoCaptureModal() {
+    setShowVideoCaptureModal(!showVideoCaptureModal);
+  }
+
+  function handleShow() {
+    setShowVideoCaptureModal(!showVideoCaptureModal);
+  }
+
+  return (<SEditorContainer id='editor-container'>
     <div className='canvasContainer'>
       <div className='controller'>
         <div>
           <ul>
-            <li><TextSizeSelectbox handler={(selected) => setTextOptions({ ...textOptions, fontSize: selected })} /></li>
-            <li>
-              <SAddTextControlButton show={showTextInput}>
-                <div className='btn-div'>
-                  <SControlButton onClick={handleShowTextInput}><CreateIcon /></SControlButton>
-                </div>
-                <div className='input-div'>
-                  <input type='text' id='text-input' ref={textInput} onKeyUp={handleKeyUpTextInput} />
-                </div>
-              </SAddTextControlButton>
-            </li>
-            <li><SControlButton enabled={textOptions.fontWeight === 'bold' ? true : false} onClick={() => setTextOptions({ ...textOptions, fontWeight: textOptions.fontWeight === 'bold' ? 'normal' : 'bold' })}><FormatBoldIcon /></SControlButton></li>
-            <li><SControlButton enabled={textOptions.fontStyle === 'italic' ? true : false} onClick={() => setTextOptions({ ...textOptions, fontStyle: textOptions.fontStyle === 'italic' ? 'normal' : 'italic' })}><FormatItalicIcon /></SControlButton></li>
-            <li><SControlButton enabled={textOptions.linethrough} onClick={() => setTextOptions({ ...textOptions, linethrough: !textOptions.linethrough })}><FormatStrikethroughIcon /></SControlButton></li>
+            <li><SControlButton onClick={removeSelectedObject}><ClearIcon /></SControlButton></li>
             <li>
               <SColorPickerControlButton showColorPicker={showColorPicker}>
                 <div className='btn-div'>
@@ -406,22 +464,21 @@ const Editor = () => {
                 </div>
               </SColorPickerControlButton>
             </li>
-            <li><SControlButton onClick={removeSelectedObject}><ClearIcon /></SControlButton></li>
-            <li><FileInput handler={upload}><PanoramaIcon /></FileInput></li>
-            <li><SControlButton onClick={download}><DownloadIcon /></SControlButton></li>
-            <li><SControlButton onClick={() => handleObjectPosition({ action: 'front' })}><FlipToFrontIcon /></SControlButton></li>
-            <li><SControlButton onClick={() => handleObjectPosition({ action: 'back' })}><FlipToBackIcon /></SControlButton></li>
-            <li><SControlButton onClick={test}><QuestionMarkIcon /></SControlButton></li>
+            <li><TemplateSelectbox handler={setTemplate} /></li>
+            <li><SControlButton onClick={openVideoCaptureModal}>UPLOAD</SControlButton></li>
+            <li><SControlButton onClick={download}>DOWNLOAD</SControlButton></li>
+            <li><SControlButton onClick={() => {
+              canvas.current.discardActiveObject();
+              canvas.current.renderAll();
+            }}>UNSELECT</SControlButton></li>
+            <li><SControlButton onClick={sendToParent}>CAPTURE</SControlButton></li>
           </ul>
         </div>
       </div>
       <canvas id='canvas-editor' ref={canvasNode} />
     </div>
 
-    <div className='object-layers' style={{ display: 'block' }}>
-      <div><h3>Layers (드래그하여 오브젝트 노출순위 조정, 작업중)</h3></div>
-      <ObjectLayers data={canvas.current ? canvas.current.getObjects() : []} />
-    </div>
+    <VideoCaptureModal show={showVideoCaptureModal} handleShow={handleShow} handler={setImageToCanvas} />
   </SEditorContainer>);
 }
 
