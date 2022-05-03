@@ -64,7 +64,7 @@ const SEditorContainer = styled.div`
       > div {
         // border: 1px solid gray;
         height: 100%;
-        margin: 0 20px;
+        margin: 0 5px;
 
         ul {
           list-style: none;
@@ -433,10 +433,10 @@ const Editor = () => {
     const videoHeight = document.querySelector('#videoPlayer').videoHeight;
     const clientWidth = document.body.clientWidth;
     const canvasHeight = (videoHeight * clientWidth) / videoWidth;
-    console.log('videoWidth: ', videoWidth);
-    console.log('videoHeight: ', videoHeight);
-    console.log('clientWidth: ', clientWidth);
-    console.log('canvasHeight: ', canvasHeight);
+    // console.log('videoWidth: ', videoWidth);
+    // console.log('videoHeight: ', videoHeight);
+    // console.log('clientWidth: ', clientWidth);
+    // console.log('canvasHeight: ', canvasHeight);
     canvas.current.setHeight(canvasHeight);
   }
 
@@ -453,15 +453,25 @@ const Editor = () => {
       <div className='controller'>
         <div>
           <ul>
-            <li><SControlButton onClick={sendToParent}>SEND TO PARENT</SControlButton></li>
+            <li><SControlButton onClick={removeSelectedObject}><ClearIcon /></SControlButton></li>
+            <li>
+              <SColorPickerControlButton showColorPicker={showColorPicker}>
+                <div className='btn-div'>
+                  <SColorPicker color={color} onClick={() => setShowColorPicker(!showColorPicker)}><div></div></SColorPicker>
+                </div>
+                <div className='input-div'>
+                  <GithubPicker color onChangeComplete={handleColorPicker} />
+                </div>
+              </SColorPickerControlButton>
+            </li>
+            <li><TemplateSelectbox handler={setTemplate} /></li>
+            <li><SControlButton onClick={openVideoCaptureModal}>UPLOAD</SControlButton></li>
+            <li><SControlButton onClick={download}>DOWNLOAD</SControlButton></li>
             <li><SControlButton onClick={() => {
               canvas.current.discardActiveObject();
               canvas.current.renderAll();
             }}>UNSELECT</SControlButton></li>
-            <li><SControlButton onClick={removeSelectedObject}><ClearIcon /></SControlButton></li>
-            <li><TemplateSelectbox handler={setTemplate} /></li>
-            <li><SControlButton onClick={openVideoCaptureModal}>VIDEO CAPTURE</SControlButton></li>
-            <li><SControlButton onClick={download}>DOWNLOAD</SControlButton></li>
+            <li><SControlButton onClick={sendToParent}>CAPTURE</SControlButton></li>
           </ul>
         </div>
       </div>
