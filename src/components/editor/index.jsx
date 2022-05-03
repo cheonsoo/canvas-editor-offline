@@ -453,6 +453,17 @@ const Editor = () => {
       <div className='controller'>
         <div>
           <ul>
+            <li><TemplateSelectbox handler={setTemplate} /></li>
+            <li>
+              <SAddTextControlButton show={showTextInput}>
+                <div className='btn-div'>
+                  <SControlButton onClick={handleShowTextInput}><CreateIcon /></SControlButton>
+                </div>
+                <div className='input-div'>
+                  <input type='text' id='text-input' ref={textInput} onKeyUp={handleKeyUpTextInput} />
+                </div>
+              </SAddTextControlButton>
+            </li>
             <li><SControlButton onClick={removeSelectedObject}><ClearIcon /></SControlButton></li>
             <li>
               <SColorPickerControlButton showColorPicker={showColorPicker}>
@@ -464,14 +475,20 @@ const Editor = () => {
                 </div>
               </SColorPickerControlButton>
             </li>
-            <li><TemplateSelectbox handler={setTemplate} /></li>
-            <li><SControlButton onClick={openVideoCaptureModal}>UPLOAD</SControlButton></li>
-            <li><SControlButton onClick={download}>DOWNLOAD</SControlButton></li>
+            <li><FileInput handler={upload}><PanoramaIcon /></FileInput></li>
+            <li><SControlButton onClick={download}><DownloadIcon /></SControlButton></li>
+            <li><SControlButton onClick={() => handleObjectPosition({ action: 'front' })}><FlipToFrontIcon /></SControlButton></li>
+            <li><SControlButton onClick={() => handleObjectPosition({ action: 'back' })}><FlipToBackIcon /></SControlButton></li>
+            <li><SControlButton enabled={textOptions.fontWeight === 'bold' ? true : false} onClick={() => setTextOptions({ ...textOptions, fontWeight: textOptions.fontWeight === 'bold' ? 'normal' : 'bold' })}><FormatBoldIcon /></SControlButton></li>
+            <li><SControlButton enabled={textOptions.fontStyle === 'italic' ? true : false} onClick={() => setTextOptions({ ...textOptions, fontStyle: textOptions.fontStyle === 'italic' ? 'normal' : 'italic' })}><FormatItalicIcon /></SControlButton></li>
+            <li><SControlButton enabled={textOptions.linethrough} onClick={() => setTextOptions({ ...textOptions, linethrough: !textOptions.linethrough })}><FormatStrikethroughIcon /></SControlButton></li>
+            <li><SControlButton onClick={test}><QuestionMarkIcon /></SControlButton></li>
+            <li><SControlButton onClick={sendToParent}>CAPTURE</SControlButton></li>
             <li><SControlButton onClick={() => {
               canvas.current.discardActiveObject();
               canvas.current.renderAll();
             }}>UNSELECT</SControlButton></li>
-            <li><SControlButton onClick={sendToParent}>CAPTURE</SControlButton></li>
+            <li><SControlButton onClick={openVideoCaptureModal}>UPLOAD</SControlButton></li>
           </ul>
         </div>
       </div>

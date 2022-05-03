@@ -4,5 +4,6 @@ app:
   root: /Users/cheonsoo.park/Workspace/chance/canvas-editor-offline
 s3:
   bucket:
-    static: s3://static.devnology.com
-    admin: s3://test-pddetail-admin.lotteon.com
+    static: s3://test-pddetail-admin.lotteon.com
+    path: apps
+    # static: s3://stg-static.lotteon.com/m/product

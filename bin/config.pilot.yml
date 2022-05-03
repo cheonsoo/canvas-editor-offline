@@ -5,4 +5,5 @@ app:
 s3:
   bucket:
     static: s3://static.devnology.com
-    admin: s3://test-pddetail-admin.lotteon.com
+    path: pilot
+    # admin: s3://test-pddetail-admin.lotteon.com
